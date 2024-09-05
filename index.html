@@ -1,0 +1,216 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Call Recorder with Dialer</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .welcome-container {
+            text-align: center;
+            border: 2px solid #800080; /* Purple border */
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #87CEEB; /* Sky blue background */
+            color: #800080; /* Purple text */
+            font-size: 24px; /* Increased font size */
+        }
+
+        .recorder-container, .history-container, .dialer-container {
+            text-align: center;
+            border: 2px solid #0000FF; /* Blue border */
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #FAFAD2; /* Light golden background */
+            color: #0000FF; /* Blue text */
+            font-size: 24px; /* Increased font size */
+        }
+
+        h1, h2 {
+            margin-bottom: 20px;
+            font-size: 36px; /* Larger heading text */
+        }
+
+        button {
+            background-color: #0000FF; /* Blue background for button */
+            color: #FAFAD2; /* Light golden text for button */
+            border: none;
+            padding: 15px 30px; /* Larger button size */
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px; /* Increased button text size */
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #6495ED; /* Cornflower blue */
+        }
+
+        .logo {
+            width: 150px; /* Adjust the size as needed */
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            font-size: 20px; /* Increase list item size */
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        input[type="tel"] {
+            padding: 10px;
+            font-size: 18px;
+            margin-top: 10px;
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container" id="welcomeContainer">
+        <img src="recording-logo.png" alt="Recording Logo" class="logo">
+        <h1>Welcome to Auto Call Recorder</h1>
+        <p>Your calls are safely recorded.</p>
+    </div>
+
+    <div class="recorder-container" id="recorderContainer" style="display: none;">
+        <h2>Recording in Progress</h2>
+        <!-- Recorder Controls -->
+        <button onclick="stopRecording()">Stop Recording</button>
+        <button onclick="viewHistory()">View Previous Recordings</button>
+        <button onclick="showDialer()">Make a Call</button>
+    </div>
+
+    <div class="history-container" id="historyContainer" style="display: none;">
+        <h2>Call History</h2>
+        <ul id="callHistoryList"></ul>
+        <button onclick="goBack()">Back to Recorder</button>
+    </div>
+
+    <div class="dialer-container" id="dialerContainer" style="display: none;">
+        <h2>Make a Call</h2>
+        <input type="tel" id="phoneNumber" placeholder="Enter phone number" pattern="[0-9]{10}" required>
+        <br>
+        <button onclick="makeCall()">Call Now</button>
+        <button onclick="goBack()">Back to Recorder</button>
+    </div>
+
+    <script>
+        let callHistory = [];
+
+        // Load saved recordings from local storage when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCallHistory();
+
+            // Automatically transition to the recorder page after 2 seconds
+            setTimeout(function() {
+                document.getElementById('welcomeContainer').style.display = 'none';
+                document.getElementById('recorderContainer').style.display = 'block';
+            }, 2000); // 2000ms = 2 seconds
+        });
+
+        function stopRecording() {
+            const currentDateTime = new Date();
+            const formattedDateTime = currentDateTime.toLocaleString().replace(/[^a-zA-Z0-9]/g, '_');
+            
+            // Placeholder for the actual recording file (could be replaced by real audio data)
+            const recordingFileName = `Recording_${formattedDateTime}.mp3`;
+            
+            // Save recording information to history
+            const recording = {
+                date: currentDateTime.toLocaleString(),
+                file: recordingFileName,
+                audioSrc: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjY0...'  // Placeholder for Base64 encoded audio file
+            };
+            callHistory.push(recording);
+            
+            // Save the updated history to local storage
+            saveCallHistory();
+            
+            alert(`Recording stopped. File saved as: ${recordingFileName}`);
+            
+            // Show the call history page
+            viewHistory();
+        }
+
+        function viewHistory() {
+            document.getElementById('recorderContainer').style.display = 'none';
+            document.getElementById('historyContainer').style.display = 'block';
+            
+            // Populate the call history list
+            const callHistoryList = document.getElementById('callHistoryList');
+            callHistoryList.innerHTML = ''; // Clear previous history
+            callHistory.forEach((entry, index) => {
+                const li = document.createElement('li');
+                
+                li.innerHTML = `
+                    ${entry.date} 
+                    <br>
+                    <audio controls>
+                        <source src="${entry.audioSrc}" type="audio/mp3">
+                        Your browser does not support the audio element.
+                    </audio>
+                    <br>
+                    <a href="#" onclick="downloadRecording(${index})">Download</a>
+                `;
+                callHistoryList.appendChild(li);
+            });
+        }
+
+        function goBack() {
+            document.getElementById('historyContainer').style.display = 'none';
+            document.getElementById('recorderContainer').style.display = 'block';
+        }
+
+        function downloadRecording(index) {
+            const recording = callHistory[index];
+            const element = document.createElement('a');
+            element.setAttribute('href', recording.audioSrc);
+            element.setAttribute('download', recording.file);
+            
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        // Save call history to local storage
+        function saveCallHistory() {
+            localStorage.setItem('callHistory', JSON.stringify(callHistory));
+        }
+
+        // Load call history from local storage
+        function loadCallHistory() {
+            const savedHistory = localStorage.getItem('callHistory');
+            if (savedHistory) {
+                callHistory = JSON.parse(savedHistory);
+            }
+        }
+
+        // Show dialer screen
+        function showDialer() {
+            document.getElementById('recorderContainer').style.display = 'none';
+            document.getElementById('dialerContainer').style.display = 'block';
+        }
+
+        // Call function to dial a number
+        function makeCall() {
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            if (phoneNumber) {
+                window.location.href = `tel:${phoneNumber}`;
+            } else {
+                alert('Please enter a valid phone number');
+            }
+        }
+    </script>
+</body>
+</html>
